@@ -1,0 +1,548 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jan  3 16:03:54 2018
+
+@author: Tian
+"""
+
+import pandas as pd
+import numpy as np
+
+def feature_1():   #所有mac的出现平均停留时间
+    
+    F1_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_1.csv')
+    people=F1_data['mac'].values
+    people=list(set(people))
+    mac={}
+    number={}
+    for i in people:
+        mac[i]=0
+        number[i]=1
+    
+    data_mac=F1_data.set_index('mac')
+    for i in people:
+        if type(data_mac.loc[i])==pd.Series:
+            second=data_mac.loc[i]['duration']
+            second=pd.to_datetime(second)
+            second=second.hour*3600+second.minute*60+second.second
+            mac[i]=second
+        else:
+            val=data_mac.loc[i]['duration'].values
+            val=pd.to_datetime(val)
+            for j in val:
+                second=j.hour*3600+j.minute*60+j.second
+                mac[i]+=second
+            number[i]=len(val)
+    for i in mac:
+        mac[i]=mac[i]/number[i]
+    
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F1.txt','w')
+    f.write(str(mac))
+    f.close
+    
+def feature_2():   #所有mac的出现时区
+    
+    F2_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_1.csv')
+    first_zone=pd.datetime(2015,1,1,6,0,0)-pd.datetime(2015,1,1,0,0,0)
+    second_zone=pd.datetime(2015,1,1,12,0,0)-pd.datetime(2015,1,1,0,0,0)
+    third_zone=pd.datetime(2015,1,1,18,0,0)-pd.datetime(2015,1,1,0,0,0)
+    people=F2_data['mac'].values
+    people=list(set(people))
+    mac={}
+    
+    data_mac=F2_data.set_index('mac')
+    for i in people:
+        mac[i]=0
+    
+    for i in people:
+        if type(data_mac.loc[i])==pd.Series:
+            showing=data_mac.loc[i]['showing time']
+            date=pd.to_datetime(showing[:10])
+            duration=pd.to_datetime(showing)-date
+            if duration<first_zone:
+                mac[i]=1
+            elif first_zone<duration<second_zone:
+                mac[i]=2
+            elif second_zone<duration<third_zone:
+                mac[i]=3
+            elif third_zone<duration:
+                mac[i]=4
+        else:
+            val=data_mac.loc[i]['showing time'].values
+            count1=0
+            count2=0
+            count3=0
+            count4=0
+            for time in val:
+                date=pd.to_datetime(time[:10])
+                duration=pd.to_datetime(time)-date
+                if duration<first_zone:
+                    count1+=1
+                elif first_zone<duration<second_zone:
+                    count2+=1
+                elif second_zone<duration<third_zone:
+                    count3+=1
+                elif third_zone<duration:
+                    count4+=1
+            count=np.array([count1,count2,count3,count4])
+            mac[i]=np.where(count==max(count))[0][0]+1
+    
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F2.txt','w')
+    f.write(str(mac))
+    f.close 
+    
+    
+def feature_3():   #所有mac的出现次数
+    
+    F3_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_1.csv')
+    group=F3_data.groupby('mac')
+    
+    people=F3_data['mac'].values
+    people=list(set(people))
+    mac={}
+    
+    for i in people:
+        mac[i]=0
+        
+    for i,j in group:
+        mac[i]=len(j)
+    
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F3.txt','w')
+    f.write(str(mac))
+    f.close
+    
+def feature_4():  #mac的交易次数
+    
+    F4_data=pd.read_csv('/Users/apple/Desktop/Data/data_2.csv')
+    F4_data=F4_data.drop_duplicates('time')
+    group=F4_data.groupby('mac')
+    
+    people=F4_data['mac'].values
+    people=list(set(people))
+    mac={}
+    
+    for i in people:
+        mac[i]=0
+    
+    for i,j in group:
+        mac[i]=len(j)
+    
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F4.txt','w')
+    f.write(str(mac))
+    f.close
+        
+def feature_5():  #交易的持续时间
+    
+    F5_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_3.csv')
+    
+    people=F5_data['mac'].values
+    people=list(set(people))
+    mac={}
+
+    for i in people:
+        mac[i]=0
+
+    mac_index=F5_data.set_index('mac')
+    for i in people:
+        if type(mac_index.loc[i])==pd.Series:
+            time=mac_index.loc[i]['duration']
+            time=pd.to_datetime(time)
+            mac[i]=time.hour*3600+time.minute*60+time.second
+        else:
+            count=0
+            for time in mac_index.loc[i]['duration'].values:
+                time=pd.to_datetime(time)
+                mac[i]+=time.hour*3600+time.minute*60+time.second
+                count+=1
+            mac[i]=mac[i]/count
+    
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F5.txt','w')
+    f.write(str(mac))
+    f.close
+
+def feature_6():   #有过交易记录的人出现平均停留时间
+    
+    F6_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_4.csv')
+    
+    people=F6_data['Unnamed: 0'].values
+    people=list(set(people))
+    mac={}
+
+    for i in people:
+        mac[i]=0
+    
+    mac_index=F6_data.set_index('Unnamed: 0')
+    for i in people:
+        if type(mac_index.loc[i])==pd.Series:
+            time=mac_index.loc[i]['duration']
+            time=pd.to_datetime(time)
+            mac[i]=time.hour*3600+time.minute*60+time.second
+        else:
+            count=0
+            for time in mac_index.loc[i]['duration'].values:
+                time=pd.to_datetime(time)
+                mac[i]+=time.hour*3600+time.minute*60+time.second
+                count+=1
+            mac[i]=mac[i]/count
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F6.txt','w')
+    f.write(str(mac))
+    f.close    
+    
+def feature_7():   #有过交易记录的人的出现次数
+    
+    F7_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_5.csv')
+    people=F7_data['Unnamed: 0'].values
+    people=list(set(people))
+    mac={}
+
+    for i in people:
+        mac[i]=0
+    
+    mac_index=F7_data.set_index('Unnamed: 0')
+    for i in people:
+        mac[i]=mac_index.loc[i]['showing_time']
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F7.txt','w')
+    f.write(str(mac))
+    f.close
+    
+def feature_8():   #有过交易记录，但是此次是路过的平均停留时间
+
+    F8_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_6.csv')
+    people=F8_data['mac'].values
+    people=list(set(people))
+    mac={}
+
+    for i in people:
+        mac[i]=0
+    
+    mac_index=F8_data.set_index('mac')
+    for i in people:
+        if type(mac_index.loc[i])==pd.Series:
+            time=pd.to_datetime(mac_index.loc[i]['duration'])
+            mac[i]=time.hour*3600+time.minute*60+time.second
+        else:
+            count=0
+            for j in mac_index.loc[i]['duration'].values:
+                time=pd.to_datetime(j)
+                mac[i]+=time.hour*3600+time.minute*60+time.second
+                count+=1
+            mac[i]=mac[i]/count
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F8.txt','w')
+    f.write(str(mac))
+    f.close
+    
+def feature_9():   #没有购买记录的人的停留时间
+    
+    F9_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_7.csv')
+    people=F9_data['Unnamed: 0'].values
+    people=list(set(people))
+    mac={}
+
+    for i in people:
+        mac[i]=0
+    
+    group=F9_data.groupby('Unnamed: 0')
+    for i,j in group:
+        if type(j)==pd.Series:
+            time=pd.to_datetime(j['duration'])
+            mac[i]=time.hour*3600+time.minute*60+time.second
+        else:
+            count=0
+            for t in j['duration'].values:
+                time=pd.to_datetime(t)
+                mac[i]+=time.hour*3600+time.minute*60+time.second
+                count+=1
+            mac[i]=mac[i]/count
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F9.txt','w')
+    f.write(str(mac))
+    f.close
+
+def feature_10():   # 有过交易记录的人最频繁的出现时区
+    
+    F10_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_4.csv')
+    first_zone=pd.datetime(2015,1,1,6,0,0)-pd.datetime(2015,1,1,0,0,0)
+    second_zone=pd.datetime(2015,1,1,12,0,0)-pd.datetime(2015,1,1,0,0,0)
+    third_zone=pd.datetime(2015,1,1,18,0,0)-pd.datetime(2015,1,1,0,0,0)
+    people=F10_data['Unnamed: 0'].values
+    people=list(set(people))
+    mac={}
+    
+    data_mac=F10_data.set_index('Unnamed: 0')
+    for i in people:
+        mac[i]=0
+    
+    for i in people:
+        if type(data_mac.loc[i])==pd.Series:
+            showing=data_mac.loc[i]['showing time']
+            date=pd.to_datetime(showing[:10])
+            duration=pd.to_datetime(showing)-date
+            if duration<first_zone:
+                mac[i]=1
+            elif first_zone<duration<second_zone:
+                mac[i]=2
+            elif second_zone<duration<third_zone:
+                mac[i]=3
+            elif third_zone<duration:
+                mac[i]=4
+        else:
+            val=data_mac.loc[i]['showing time'].values
+            count1=0
+            count2=0
+            count3=0
+            count4=0
+            for time in val:
+                date=pd.to_datetime(time[:10])
+                duration=pd.to_datetime(time)-date
+                if duration<first_zone:
+                    count1+=1
+                elif first_zone<duration<second_zone:
+                    count2+=1
+                elif second_zone<duration<third_zone:
+                    count3+=1
+                elif third_zone<duration:
+                    count4+=1
+            count=np.array([count1,count2,count3,count4])
+            mac[i]=np.where(count==max(count))[0][0]+1
+
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F10.txt','w')
+    f.write(str(mac))
+    f.close
+
+def feature_11():   #没有购买记录的人的出现次数
+    
+    F11_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_7.csv')
+    people=F11_data['Unnamed: 0'].values
+    people=list(set(people))
+    mac={}
+
+    for i in people:
+        mac[i]=0
+    group=F11_data.groupby('Unnamed: 0')
+    for i,j in group:
+        mac[i]=len(j)
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F11.txt','w')
+    f.write(str(mac))
+    f.close
+
+def feature_12():   #没有交易记录的人最频繁的出现时区
+    
+    F12_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_7.csv')
+    first_zone=pd.datetime(2015,1,1,6,0,0)-pd.datetime(2015,1,1,0,0,0)
+    second_zone=pd.datetime(2015,1,1,12,0,0)-pd.datetime(2015,1,1,0,0,0)
+    third_zone=pd.datetime(2015,1,1,18,0,0)-pd.datetime(2015,1,1,0,0,0)
+    people=F12_data['Unnamed: 0'].values
+    people=list(set(people))
+    mac={}
+    
+    data_mac=F12_data.set_index('Unnamed: 0')
+    for i in people:
+        mac[i]=0
+    
+    for i in people:
+        if type(data_mac.loc[i])==pd.Series:
+            showing=data_mac.loc[i]['showing time']
+            date=pd.to_datetime(showing[:10])
+            duration=pd.to_datetime(showing)-date
+            if duration<first_zone:
+                mac[i]=1
+            elif first_zone<duration<second_zone:
+                mac[i]=2
+            elif second_zone<duration<third_zone:
+                mac[i]=3
+            elif third_zone<duration:
+                mac[i]=4
+        else:
+            val=data_mac.loc[i]['showing time'].values
+            count1=0
+            count2=0
+            count3=0
+            count4=0
+            for time in val:
+                date=pd.to_datetime(time[:10])
+                duration=pd.to_datetime(time)-date
+                if duration<first_zone:
+                    count1+=1
+                elif first_zone<duration<second_zone:
+                    count2+=1
+                elif second_zone<duration<third_zone:
+                    count3+=1
+                elif third_zone<duration:
+                    count4+=1
+            count=np.array([count1,count2,count3,count4])
+            mac[i]=np.where(count==max(count))[0][0]+1
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F12.txt','w')
+    f.write(str(mac))
+    f.close
+
+def feature_13():   #所有进店人的平均停留时间
+    
+    F13_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_8.csv')
+    people=F13_data['Unnamed: 0'].values
+    people=list(set(people))
+    mac={}
+
+    for i in people:
+        mac[i]=0
+    
+    group=F13_data.groupby('Unnamed: 0')
+    for i,j in group:
+        if type(j)==pd.Series:
+            time=pd.to_datetime(j['duration'])
+            mac[i]=time.hour*3600+time.minute*60+time.second
+        else:
+            count=0
+            for t in j['duration'].values:
+                time=pd.to_datetime(t)
+                mac[i]+=time.hour*3600+time.minute*60+time.second
+                count+=1
+            mac[i]=mac[i]/count
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F13.txt','w')
+    f.write(str(mac))
+    f.close
+
+def feature_14():  #  有过交易记录的人的交易次数
+    
+    F14_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_9.csv')
+    people=F14_data['mac'].values
+    mac={}
+    
+    for i in people:
+        mac[i]=0
+    
+    group=F14_data.groupby('mac')
+    for i,j in group:
+        if type(j)==pd.Series:
+            time=pd.to_datetime(j['duration'])
+            mac[i]=time.hour*3600+time.minute*60+time.second
+        else:
+            count=0
+            for t in j['duration'].values:
+                time=pd.to_datetime(t)
+                mac[i]+=time.hour*3600+time.minute*60+time.second
+                count+=1
+            mac[i]=mac[i]/count
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F14.txt','w')
+    f.write(str(mac))
+    f.close
+   
+def feature_15():   #交易对应的最频繁的时区
+    
+    F15_data=pd.read_csv('/Users/apple/Desktop/Data/data_2.csv')
+    first_zone=pd.datetime(2015,1,1,6,0,0)-pd.datetime(2015,1,1,0,0,0)
+    second_zone=pd.datetime(2015,1,1,12,0,0)-pd.datetime(2015,1,1,0,0,0)
+    third_zone=pd.datetime(2015,1,1,18,0,0)-pd.datetime(2015,1,1,0,0,0)
+    F15_data=F15_data.drop_duplicates('time')
+    group=F15_data.groupby('mac')
+    people=F15_data['mac'].values
+    people=list(set(people))
+    mac={}
+    
+    for i in people:
+        mac[i]=0
+    
+    for i,j in group:
+        if type(j)==pd.Series:
+            showing=j['time']
+            date=pd.to_datetime(showing[:10])
+            duration=pd.to_datetime(showing)-date
+            if duration<first_zone:
+                mac[i]=1
+            elif first_zone<duration<second_zone:
+                mac[i]=2
+            elif second_zone<duration<third_zone:
+                mac[i]=3
+            elif third_zone<duration:
+                mac[i]=4
+        else:
+            val=j['time'].values
+            count1=0
+            count2=0
+            count3=0
+            count4=0
+            for time in val:
+                date=pd.to_datetime(time[:10])
+                duration=pd.to_datetime(time)-date
+                if duration<first_zone:
+                    count1+=1
+                elif first_zone<duration<second_zone:
+                    count2+=1
+                elif second_zone<duration<third_zone:
+                    count3+=1
+                elif third_zone<duration:
+                    count4+=1
+            count=np.array([count1,count2,count3,count4])
+            mac[i]=np.where(count==max(count))[0][0]+1
+    
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F15.txt','w')
+    f.write(str(mac))
+    f.close
+
+def feature_16():   #进店无购物的时区
+    
+    F16_data=pd.read_csv('/Users/apple/Desktop/Data/Category_data/data_9.csv')
+    first_zone=pd.datetime(2015,1,1,6,0,0)-pd.datetime(2015,1,1,0,0,0)
+    second_zone=pd.datetime(2015,1,1,12,0,0)-pd.datetime(2015,1,1,0,0,0)
+    third_zone=pd.datetime(2015,1,1,18,0,0)-pd.datetime(2015,1,1,0,0,0)
+    people=F16_data['mac'].values
+    people=list(set(people))
+    mac={}
+    
+    data_mac=F16_data.set_index('mac')
+    for i in people:
+        mac[i]=0
+    
+    for i in people:
+        if type(data_mac.loc[i])==pd.Series:
+            showing=data_mac.loc[i]['showing time']
+            date=pd.to_datetime(showing[:10])
+            duration=pd.to_datetime(showing)-date
+            if duration<first_zone:
+                mac[i]=1
+            elif first_zone<duration<second_zone:
+                mac[i]=2
+            elif second_zone<duration<third_zone:
+                mac[i]=3
+            elif third_zone<duration:
+                mac[i]=4
+        else:
+            val=data_mac.loc[i]['showing time'].values
+            count1=0
+            count2=0
+            count3=0
+            count4=0
+            for time in val:
+                date=pd.to_datetime(time[:10])
+                duration=pd.to_datetime(time)-date
+                if duration<first_zone:
+                    count1+=1
+                elif first_zone<duration<second_zone:
+                    count2+=1
+                elif second_zone<duration<third_zone:
+                    count3+=1
+                elif third_zone<duration:
+                    count4+=1
+            count=np.array([count1,count2,count3,count4])
+            mac[i]=np.where(count==max(count))[0][0]+1
+
+    f=open('/Users/apple/Desktop/Data/Feature-vector/F16.txt','w')
+    f.write(str(mac))
+    f.close
+    
+def main():
+    
+    feature_16()
+    
+
+
+if __name__=='__main__':
+    main()
